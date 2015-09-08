@@ -1983,4 +1983,116 @@ class ObjectHydratorTest extends HydrationTestCase
         $this->assertCount(1, $result[0]->collection);
         $this->assertInstanceOf(SimpleEntity::CLASSNAME, $result[0]->collection[0]);
     }
+
+    /**
+     * SELECT a, u
+     *   FROM Articles a
+     *   JOIN a.user u
+     */
+    public function testFetchJoinWithResultSetColumnsOrderedFromRootEntityReturnsCorrectResults()
+    {
+        $rsm = new ResultSetMapping;
+        $rsm->addEntityResult('Doctrine\Tests\Models\CMS\CmsArticle', 'a');
+        $rsm->addJoinedEntityResult(
+            'Doctrine\Tests\Models\CMS\CmsUser',
+            'u',
+            'a',
+            'user'
+        );
+        $rsm->addFieldResult('a', 'a__id', 'id');
+        $rsm->addFieldResult('a', 'a__topic', 'topic');
+        $rsm->addFieldResult('u', 'u__id', 'id');
+        $rsm->addFieldResult('u', 'u__name', 'name');
+
+        $resultSet = array(
+            array(
+                'a__id' => '1',
+                'a__topic' => 'Getting things done!',
+                'u__id' => '1',
+                'u__name' => 'romanb',
+            ),
+            array(
+                'a__id' => '2',
+                'a__topic' => 'ZendCon',
+                'u__id' => '2',
+                'u__name' => 'jwage',
+            ),
+        );
+
+        $stmt     = new HydratorMockStatement($resultSet);
+        $hydrator = new \Doctrine\ORM\Internal\Hydration\ObjectHydrator($this->_em);
+        $result   = $hydrator->hydrateAll($stmt, $rsm, array(Query::HINT_FORCE_PARTIAL_LOAD => true));
+
+        $this->assertEquals(2, count($result));
+
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsArticle', $result[0]);
+        $this->assertEquals($resultSet[0]['a__id'], $result[0]->id);
+        $this->assertEquals($resultSet[0]['a__topic'], $result[0]->topic);
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsUser', $result[0]->user);
+        $this->assertEquals($resultSet[0]['u__id'], $result[0]->user->id);
+        $this->assertEquals($resultSet[0]['u__name'], $result[0]->user->name);
+
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsArticle', $result[1]);
+        $this->assertEquals($resultSet[1]['a__id'], $result[1]->id);
+        $this->assertEquals($resultSet[1]['a__topic'], $result[1]->topic);
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsUser', $result[1]->user);
+        $this->assertEquals($resultSet[1]['u__id'], $result[1]->user->id);
+        $this->assertEquals($resultSet[1]['u__name'], $result[1]->user->name);
+    }
+
+    /**
+     * SELECT a, u
+     *   FROM Articles a
+     *   JOIN a.user u
+     */
+    public function testFetchJoinWithResultSetColumnsOrderedFromChildEntityReturnsCorrectResults()
+    {
+        $rsm = new ResultSetMapping;
+        $rsm->addEntityResult('Doctrine\Tests\Models\CMS\CmsArticle', 'a');
+        $rsm->addJoinedEntityResult(
+            'Doctrine\Tests\Models\CMS\CmsUser',
+            'u',
+            'a',
+            'user'
+        );
+        $rsm->addFieldResult('a', 'a__id', 'id');
+        $rsm->addFieldResult('a', 'a__topic', 'topic');
+        $rsm->addFieldResult('u', 'u__id', 'id');
+        $rsm->addFieldResult('u', 'u__name', 'name');
+
+        $resultSet = array(
+            array(
+                'u__id' => '1',
+                'u__name' => 'romanb',
+                'a__id' => '1',
+                'a__topic' => 'Getting things done!',
+            ),
+            array(
+                'u__id' => '2',
+                'u__name' => 'jwage',
+                'a__id' => '2',
+                'a__topic' => 'ZendCon',
+            ),
+        );
+
+        $stmt     = new HydratorMockStatement($resultSet);
+        $hydrator = new \Doctrine\ORM\Internal\Hydration\ObjectHydrator($this->_em);
+        $result   = $hydrator->hydrateAll($stmt, $rsm, array(Query::HINT_FORCE_PARTIAL_LOAD => true));
+
+        $this->assertEquals(2, count($result));
+
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsArticle', $result[0]);
+        $this->assertEquals($resultSet[0]['a__id'], $result[0]->id);
+        $this->assertEquals($resultSet[0]['a__topic'], $result[0]->topic);
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsUser', $result[0]->user);
+        $this->assertEquals($resultSet[0]['u__id'], $result[0]->user->id);
+        $this->assertEquals($resultSet[0]['u__name'], $result[0]->user->name);
+
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsArticle', $result[1]);
+        $this->assertEquals($resultSet[1]['a__id'], $result[1]->id);
+        $this->assertEquals($resultSet[1]['a__topic'], $result[1]->topic);
+        $this->assertInstanceOf('Doctrine\Tests\Models\CMS\CmsUser', $result[1]->user);
+        $this->assertEquals($resultSet[1]['u__id'], $result[1]->user->id);
+        $this->assertEquals($resultSet[1]['u__name'], $result[1]->user->name);
+    }
 }
