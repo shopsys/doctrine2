@@ -1199,4 +1199,102 @@ class ArrayHydratorTest extends HydrationTestCase
         $this->assertTrue(isset($result[2]));
         $this->assertEquals(2, $result[2][$userEntityKey]['id']);
     }
+
+    /**
+     * SELECT b, hc
+     *   FROM Books b
+     *   JOIN b.hardCover hc
+     */
+    public function testDDC1960Passing()
+    {
+        $rsm = new ResultSetMapping;
+        $rsm->addEntityResult('Doctrine\Tests\Models\DDC1960\Book', 'b');
+        $rsm->addJoinedEntityResult(
+            'Doctrine\Tests\Models\DDC1960\HardCover',
+            'hc',
+            'b',
+            'hardCover'
+        );
+        $rsm->addMetaResult('b', 'b__id', 'id', true);
+        $rsm->addMetaResult('hc', 'hc__id', 'id', true);
+        $rsm->addMetaResult('hc', 'hc__id_book', 'id_book', true);
+
+        $resultSet = array(
+            array(
+                'b__id' => '1',
+                'hc__id' => '1',
+                'hc__id_book' => '1',
+            ),
+            array(
+                'b__id' => '2',
+                'hc__id' => '2',
+                'hc__id_book' => '2',
+            ),
+        );
+
+        $stmt     = new HydratorMockStatement($resultSet);
+        $hydrator = new \Doctrine\ORM\Internal\Hydration\ArrayHydrator($this->_em);
+        $result   = $hydrator->hydrateAll($stmt, $rsm);
+
+        $this->assertEquals(2, count($result));
+
+        $this->assertInternalType('array', $result[0]);
+        $this->assertEquals($resultSet[0]['b__id'], $result[0]['id']);
+        $this->assertInternalType('array', $result[0]['hardCover']);
+        $this->assertEquals($resultSet[0]['hc__id'], $result[0]['hardCover']['id']);
+
+        $this->assertInternalType('array', $result[1]);
+        $this->assertEquals($resultSet[1]['b__id'], $result[1]['id']);
+        $this->assertInternalType('array', $result[1]['hardCover']);
+        $this->assertEquals($resultSet[1]['hc__id'], $result[1]['hardCover']['id']);
+    }
+
+    /**
+     * SELECT hc, b
+     *   FROM Books b
+     *   JOIN b.hardCover hc
+     */
+    public function testDDC1960Failing()
+    {
+        $rsm = new ResultSetMapping;
+        $rsm->addEntityResult('Doctrine\Tests\Models\DDC1960\Book', 'b');
+        $rsm->addJoinedEntityResult(
+            'Doctrine\Tests\Models\DDC1960\HardCover',
+            'hc',
+            'b',
+            'hardCover'
+        );
+        $rsm->addMetaResult('b', 'b__id', 'id', true);
+        $rsm->addMetaResult('hc', 'hc__id', 'id', true);
+        $rsm->addMetaResult('hc', 'hc__id_book', 'id_book', true);
+
+        $resultSet = array(
+            array(
+                'hc__id' => '1',
+                'hc__id_book' => '1',
+                'b__id' => '1',
+            ),
+            array(
+                'hc__id' => '2',
+                'hc__id_book' => '2',
+                'b__id' => '2',
+            ),
+        );
+
+        $stmt     = new HydratorMockStatement($resultSet);
+        $hydrator = new \Doctrine\ORM\Internal\Hydration\ArrayHydrator($this->_em);
+        $result   = $hydrator->hydrateAll($stmt, $rsm);
+
+        $this->assertEquals(2, count($result));
+
+        $this->assertInternalType('array', $result[0]);
+        $this->assertEquals($resultSet[0]['b__id'], $result[0]['id']);
+        $this->assertInternalType('array', $result[0]['hardCover']);
+        $this->assertEquals($resultSet[0]['hc__id'], $result[0]['hardCover']['id']);
+
+        $this->assertInternalType('array', $result[1]);
+        $this->assertEquals($resultSet[1]['b__id'], $result[1]['id']);
+        $this->assertInternalType('array', $result[1]['hardCover']);
+        $this->assertEquals($resultSet[1]['hc__id'], $result[1]['hardCover']['id']);
+    }
 }
