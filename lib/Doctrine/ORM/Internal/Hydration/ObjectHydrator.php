@@ -332,6 +332,17 @@ class ObjectHydrator extends AbstractHydrator
         // Split the row data into chunks of class data.
         $rowData = $this->gatherRowData($row, $id, $nonemptyComponents);
 
+        // Order $rowData['data'] by level obtained from ResultSetMapping::$parentAliasMap
+        // It is necessary otherwise $this->_resultPointers can contain incorrect data (from previous row).
+        $dqlAliases = array_keys($rowData['data']);
+        $dqlAliasTreeWalker = new DqlAliasTreeWalker();
+        $orderedDqlAliases = $dqlAliasTreeWalker->getDqlAliasesOrderedByLevel($dqlAliases, $this->_rsm->parentAliasMap);
+        $rowDataData = $rowData['data'];
+        $rowData['data'] = [];
+        foreach ($orderedDqlAliases as $dqlAlias) {
+            $rowData['data'][$dqlAlias] = $rowDataData[$dqlAlias];
+        }
+
         // Hydrate the data chunks
         foreach ($rowData['data'] as $dqlAlias => $data) {
             $entityName = $this->_rsm->aliasMap[$dqlAlias];
