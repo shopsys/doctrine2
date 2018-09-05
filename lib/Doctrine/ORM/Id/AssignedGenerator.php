@@ -47,18 +47,23 @@ class AssignedGenerator extends AbstractIdGenerator
         $identifier = [];
 
         foreach ($idFields as $idField) {
-            $value = $class->getFieldValue($entity, $idField);
+            $fieldValue = $class->getFieldValue($entity, $idField);
 
-            if ( ! isset($value)) {
+            if ( ! isset($fieldValue)) {
                 throw ORMException::entityMissingAssignedIdForField($entity, $idField);
             }
 
             if (isset($class->associationMappings[$idField])) {
                 // NOTE: Single Columns as associated identifiers only allowed - this constraint it is enforced.
-                $value = $em->getUnitOfWork()->getSingleIdentifierValue($value);
+                $associatedEntityId = $em->getUnitOfWork()->getSingleIdentifierValue($fieldValue);
+                // @see https://github.com/doctrine/doctrine2/issues/4869
+                if ($associatedEntityId === null) {
+                    throw ORMException::entityMissingForeignAssignedId($entity, $fieldValue);
+                }
+                $identifier[$idField] = $associatedEntityId;
+            } else {
+                $identifier[$idField] = $fieldValue;
             }
-
-            $identifier[$idField] = $value;
         }
 
         return $identifier;
